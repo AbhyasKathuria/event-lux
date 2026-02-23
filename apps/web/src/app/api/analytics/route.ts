@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
     const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
     const isOnlyAdmin = role === "ADMIN";
     
-    // We define the filters as 'any' to bypass strict property checks in production
-    const eventFilter: any = isOnlyAdmin ? { organizerId: userId } : {};
-    const regFilter: any = isOnlyAdmin ? { event: { organizerId: userId } } : {};
+    // UPDATED: Use 'createdById' and 'event.createdById' to match your schema.prisma
+    const eventFilter: any = isOnlyAdmin ? { createdById: userId } : {};
+    const regFilter: any = isOnlyAdmin ? { event: { createdById: userId } } : {};
 
     const [
       totalEvents, 
@@ -28,14 +28,15 @@ export async function GET(req: NextRequest) {
       prisma.event.count({ where: eventFilter }),
       prisma.registration.count({ where: regFilter }),
       role === "SUPERADMIN" ? prisma.user.count() : Promise.resolve(0),
+      // UPDATED: Use 'checkedInAt' (DateTime) instead of 'checkedIn' (Boolean)
       prisma.registration.count({ 
         where: { 
-          checkedIn: true, 
+          checkedInAt: { not: null }, 
           ...regFilter 
         } as any 
       }),
       prisma.registration.findMany({
-        take: 10,
+        take: 50, // Increased to get better distribution for the 7-day chart
         orderBy: { createdAt: "desc" },
         where: regFilter,
         select: { createdAt: true },
@@ -55,7 +56,9 @@ export async function GET(req: NextRequest) {
 
     const regsByDay = last7Days.map((day) => ({
       day: new Date(day).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
-      count: recentRegistrations.filter((r: any) => r.createdAt.toISOString().split("T")[0] === day).length,
+      count: recentRegistrations.filter((r: any) => 
+        new Date(r.createdAt).toISOString().split("T")[0] === day
+      ).length,
     }));
 
     return NextResponse.json({
