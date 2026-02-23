@@ -10,12 +10,12 @@ export async function GET(req: NextRequest) {
     const role = (session.user as any).role;
     const userId = (session.user as any).id;
 
+    const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
     const isOnlyAdmin = role === "ADMIN";
-    const isSuperAdmin = role === "SUPERADMIN";
     
-    // Type-safe filters
+    // We define the filters as 'any' to bypass strict property checks in production
     const eventFilter: any = isOnlyAdmin ? { organizerId: userId } : {};
-    const registrationFilter: any = isOnlyAdmin ? { event: { is: { organizerId: userId } } } : {};
+    const regFilter: any = isOnlyAdmin ? { event: { organizerId: userId } } : {};
 
     const [
       totalEvents, 
@@ -26,18 +26,18 @@ export async function GET(req: NextRequest) {
       eventsByCategory
     ] = await Promise.all([
       prisma.event.count({ where: eventFilter }),
-      prisma.registration.count({ where: registrationFilter }),
-      isSuperAdmin ? prisma.user.count() : Promise.resolve(0),
+      prisma.registration.count({ where: regFilter }),
+      role === "SUPERADMIN" ? prisma.user.count() : Promise.resolve(0),
       prisma.registration.count({ 
         where: { 
           checkedIn: true, 
-          ...registrationFilter 
-        } 
+          ...regFilter 
+        } as any 
       }),
       prisma.registration.findMany({
-        take: 20,
+        take: 10,
         orderBy: { createdAt: "desc" },
-        where: registrationFilter,
+        where: regFilter,
         select: { createdAt: true },
       }),
       prisma.event.groupBy({
