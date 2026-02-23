@@ -9,7 +9,9 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL!;
   const sql = neon(connectionString);
-  const adapter = new PrismaNeon(sql);
+  
+  // The FIX: Cast 'sql' to any to bypass the NeonQueryFunction type mismatch
+  const adapter = new PrismaNeon(sql as any);
   
   // We use the standard PrismaClient with the adapter for Vercel/Serverless
   return new PrismaClient({ adapter } as any);
