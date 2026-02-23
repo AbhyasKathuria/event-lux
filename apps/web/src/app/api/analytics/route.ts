@@ -1,4 +1,3 @@
-// apps/web/src/app/api/analytics/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -11,27 +10,34 @@ export async function GET(req: NextRequest) {
     const role = (session.user as any).role;
     const userId = (session.user as any).id;
 
-    const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
+    const isOnlyAdmin = role === "ADMIN";
+    const isSuperAdmin = role === "SUPERADMIN";
     
-    // Using 'any' here specifically fixes the error shown in your Vercel logs
-    const eventFilter: any = isAdmin && role !== "SUPERADMIN" ? { organizerId: userId } : {};
+    // Type-safe filters
+    const eventFilter: any = isOnlyAdmin ? { organizerId: userId } : {};
+    const registrationFilter: any = isOnlyAdmin ? { event: { is: { organizerId: userId } } } : {};
 
-    const [totalEvents, totalRegistrations, totalUsers, checkedInCount, recentRegistrations, eventsByCategory] = await Promise.all([
+    const [
+      totalEvents, 
+      totalRegistrations, 
+      totalUsers, 
+      checkedInCount, 
+      recentRegistrations, 
+      eventsByCategory
+    ] = await Promise.all([
       prisma.event.count({ where: eventFilter }),
-      prisma.registration.count({ 
-        where: isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {} 
-      }),
-      role === "SUPERADMIN" ? prisma.user.count() : Promise.resolve(0),
+      prisma.registration.count({ where: registrationFilter }),
+      isSuperAdmin ? prisma.user.count() : Promise.resolve(0),
       prisma.registration.count({ 
         where: { 
           checkedIn: true, 
-          ...(isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {}) 
+          ...registrationFilter 
         } 
       }),
       prisma.registration.findMany({
-        take: 50,
+        take: 20,
         orderBy: { createdAt: "desc" },
-        where: isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {},
+        where: registrationFilter,
         select: { createdAt: true },
       }),
       prisma.event.groupBy({
