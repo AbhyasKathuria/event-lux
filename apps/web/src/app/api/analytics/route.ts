@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       checkedInCount,
       checkInRate: totalRegistrations > 0 ? Math.round((checkedInCount / totalRegistrations) * 100) : 0,
       regsByDay,
-      eventsByCategory: eventsByCategory.map((e) => ({ category: e.category, count: e._count.id })),
+      eventsByCategory: eventsByCategory.map((e: { category: string; _count: { id: number } }) => ({ category: e.category, count: e._count.id })),
     });
   } catch (error) {
     console.error("Analytics error:", error);
