@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Build registrations per day (last 7 days)
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -40,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     const regsByDay = last7Days.map((day) => ({
       day: new Date(day).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
-      count: recentRegistrations.filter((r) => r.createdAt.toISOString().split("T")[0] === day).length,
+      count: recentRegistrations.filter((r: { createdAt: Date }) => r.createdAt.toISOString().split("T")[0] === day).length,
     }));
 
     return NextResponse.json({
