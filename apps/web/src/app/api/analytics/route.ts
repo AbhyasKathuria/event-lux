@@ -1,3 +1,4 @@
+// apps/web/src/app/api/analytics/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
     
-    // Cast to any to prevent strict type mismatch during Vercel build
+    // Using 'any' here specifically fixes the error shown in your Vercel logs
     const eventFilter: any = isAdmin && role !== "SUPERADMIN" ? { organizerId: userId } : {};
 
     const [totalEvents, totalRegistrations, totalUsers, checkedInCount, recentRegistrations, eventsByCategory] = await Promise.all([
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
         } 
       }),
       prisma.registration.findMany({
-        take: 50, // Increased to get a better spread for the chart
+        take: 50,
         orderBy: { createdAt: "desc" },
         where: isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {},
         select: { createdAt: true },
