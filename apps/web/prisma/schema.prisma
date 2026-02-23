@@ -53,7 +53,7 @@ enum RegistrationStatus {
 model University {
   id          String   @id @default(cuid())
   name        String   @unique
-  shortCode   String   @unique // e.g. "MIT", "BITS"
+  shortCode   String   @unique
   logoUrl     String?
   website     String?
   isActive    Boolean  @default(true)
@@ -67,38 +67,37 @@ model University {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  name           String
-  avatarUrl      String?
-  phone          String?
-  role           Role      @default(USER)
-  isActive       Boolean   @default(true)
-  emailVerified  Boolean   @default(false)
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  avatarUrl       String?
+  phone           String?
+  role            Role      @default(USER)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
 
   // Password auth
-  passwordHash   String?
+  password        String?
 
   // OAuth
-  googleId       String?   @unique
-  githubId       String?   @unique
+  googleId        String?   @unique
+  githubId        String?   @unique
 
-  // University link (for ADMIN role)
-  universityId   String?
-  university     University? @relation(fields: [universityId], references: [id])
+  // University link
+  universityId    String?
+  university      University? @relation(fields: [universityId], references: [id])
 
   // Timestamps
-  lastLoginAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
-  registrations  Registration[]
-  createdEvents  Event[]         @relation("EventCreator")
-  sessions       Session[]
-  notifications  Notification[]
+  registrations   Registration[]
+  createdEvents   Event[]         @relation("EventCreator")
+  sessions        Session[]
+  notifications   Notification[]
 
-  // SUPERADMIN constraint: enforced at application level (max 2)
   @@map("users")
 }
 
@@ -123,44 +122,27 @@ model Event {
   shortDescription String?       @db.VarChar(300)
   bannerUrl        String?
   thumbnailUrl     String?
-
-  // Categorization
   category         EventCategory
   tags             String[]      @default([])
-
-  // Timing
   startDate        DateTime
   endDate          DateTime
   registrationDeadline DateTime?
-
-  // Location
   venue            String?
   venueAddress     String?
   isOnline         Boolean       @default(false)
   onlineLink       String?
-
-  // Capacity
-  maxAttendees     Int?
-  currentAttendees Int           @default(0)
-
-  // Pricing
+  maxAttendees      Int?
+  currentAttendees Int            @default(0)
   isFree           Boolean       @default(true)
   price            Decimal?      @db.Decimal(10, 2)
-
-  // Status
   status           EventStatus   @default(DRAFT)
   isFeatured       Boolean       @default(false)
-
-  // Relations
   universityId     String
   university       University    @relation(fields: [universityId], references: [id])
   createdById      String
   createdBy        User          @relation("EventCreator", fields: [createdById], references: [id])
-
   registrations    Registration[]
   googleSheetSync  GoogleSheetSync?
-
-  // Timestamps
   publishedAt      DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -173,30 +155,21 @@ model Event {
 }
 
 model Registration {
-  id         String             @id @default(cuid())
-  userId     String
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventId    String
-  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  status     RegistrationStatus @default(PENDING)
-
-  // QR Ticketing
-  ticketCode String             @unique @default(cuid())
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  status      RegistrationStatus @default(PENDING)
+  ticketCode String              @unique @default(cuid())
   qrCodeUrl  String?
   checkedInAt DateTime?
-
-  // Form data (from Google Forms / custom)
-  formData   Json?
-
-  // Payment (future-proof)
+  formData    Json?
   paymentId  String?
   paidAt     DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
 
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-
-  // A user can only register once per event
   @@unique([userId, eventId])
   @@index([eventId])
   @@index([userId])
@@ -205,25 +178,20 @@ model Registration {
 }
 
 model GoogleSheetSync {
-  id             String    @id @default(cuid())
-  eventId        String    @unique
-  event          Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
+  id              String    @id @default(cuid())
+  eventId         String    @unique
+  event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   spreadsheetId  String
-  sheetName      String    @default("Sheet1")
-  formUrl        String?
-
-  // Sync config
-  isAutoSync     Boolean   @default(false)
-  syncIntervalMin Int      @default(15)  // minutes between auto-syncs
-  lastSyncAt     DateTime?
-  lastSyncStatus String?   // "success" | "error"
-  lastSyncError  String?
-
-  columnMapping  Json?     // Maps sheet columns to Registration fields
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  sheetName       String    @default("Sheet1")
+  formUrl         String?
+  isAutoSync      Boolean   @default(false)
+  syncIntervalMin Int       @default(15)
+  lastSyncAt      DateTime?
+  lastSyncStatus String?
+  lastSyncError   String?
+  columnMapping  Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@map("google_sheet_syncs")
 }
@@ -232,13 +200,11 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   title     String
   message   String
-  type      String   // "event_reminder" | "registration_confirmed" | "ticket_ready" | "system"
+  type      String
   isRead    Boolean  @default(false)
-  metadata  Json?    // e.g. { eventId, ticketCode }
-
+  metadata  Json?
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
