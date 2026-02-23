@@ -10,14 +10,11 @@ export async function GET(req: NextRequest) {
     const role = (session.user as any).role;
     const userId = (session.user as any).id;
 
-    const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
     const isOnlyAdmin = role === "ADMIN";
     
-    // Aligned with your schema: 'createdById' instead of 'organizerId'
     const eventFilter: any = isOnlyAdmin ? { createdById: userId } : {};
     const regFilter: any = isOnlyAdmin ? { event: { createdById: userId } } : {};
 
-    // Use type assertion (prisma as any) to bypass Vercel's strict build-time check
     const [
       totalEvents, 
       totalRegistrations, 
@@ -28,7 +25,8 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       (prisma as any).event.count({ where: eventFilter }),
       (prisma as any).registration.count({ where: regFilter }),
-      role === "SUPERADMIN" ? prisma.user.count() : Promise.resolve(0),
+      // FIXED: Added (prisma as any) here to stop the build error
+      role === "SUPERADMIN" ? (prisma as any).user.count() : Promise.resolve(0),
       (prisma as any).registration.count({ 
         where: { 
           checkedInAt: { not: null }, 
