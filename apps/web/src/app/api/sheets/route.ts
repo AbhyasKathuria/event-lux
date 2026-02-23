@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth: auth_client });
 
     const headers = [["Name", "Email", "Event", "Date", "Venue", "Ticket Code", "Status", "Checked In", "Registered At"]];
-    const rows = registrations.map((r) => [
+    const rows = registrations.map((r: any) => [
       r.user.name || "",
       r.user.email || "",
       r.event.title,
