@@ -76,7 +76,7 @@ model User {
   isActive        Boolean   @default(true)
   emailVerified   Boolean   @default(false)
 
-  // Password auth
+  // Password auth - Field name matches auth.ts and registration logic
   password        String?
 
   // OAuth
@@ -131,7 +131,7 @@ model Event {
   venueAddress     String?
   isOnline         Boolean       @default(false)
   onlineLink       String?
-  maxAttendees      Int?
+  maxAttendees     Int?
   currentAttendees Int            @default(0)
   isFree           Boolean       @default(true)
   price            Decimal?      @db.Decimal(10, 2)
@@ -161,14 +161,14 @@ model Registration {
   eventId     String
   event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   status      RegistrationStatus @default(PENDING)
-  ticketCode String              @unique @default(cuid())
-  qrCodeUrl  String?
+  ticketCode  String             @unique @default(cuid())
+  qrCodeUrl   String?
   checkedInAt DateTime?
   formData    Json?
-  paymentId  String?
-  paidAt     DateTime?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  paymentId   String?
+  paidAt      DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@unique([userId, eventId])
   @@index([eventId])
@@ -181,15 +181,15 @@ model GoogleSheetSync {
   id              String    @id @default(cuid())
   eventId         String    @unique
   event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  spreadsheetId  String
+  spreadsheetId   String
   sheetName       String    @default("Sheet1")
   formUrl         String?
   isAutoSync      Boolean   @default(false)
   syncIntervalMin Int       @default(15)
   lastSyncAt      DateTime?
-  lastSyncStatus String?
+  lastSyncStatus  String?
   lastSyncError   String?
-  columnMapping  Json?
+  columnMapping   Json?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

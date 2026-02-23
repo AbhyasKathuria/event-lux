@@ -4,7 +4,8 @@ import { defineConfig } from '@prisma/config'
 export default defineConfig({
   schema: './prisma/schema.prisma',
   datasource: {
-    // We changed this to DATABASE_URL to match your environment variables
-    url: process.env.DATABASE_URL!,
+    // This allows the CLI to work locally while letting Vercel 
+    // handle the environment variable during the build.
+    url: process.env.DATABASE_URL,
   },
 })
