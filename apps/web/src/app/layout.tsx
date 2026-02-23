@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { AuthProvider } from "@/components/layout/AuthProvider";
+import { Suspense } from "react";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -48,7 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            {/* The global Suspense boundary prevents "useSearchParams" crashes during production builds */}
+            <Suspense fallback={null}>
+              {children}
+            </Suspense>
           </AuthProvider>
         </ThemeProvider>
       </body>
