@@ -5,7 +5,6 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -30,12 +29,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email: credentials.email as string },
         });
 
-        if (!user || !user.passwordHash) return null;
+        // FIXED: Changed passwordHash to password to match updated schema
+        if (!user || !user.password) return null;
 
+        // FIXED: Changed user.passwordHash to user.password
         const valid = await bcrypt.compare(
           credentials.password as string,
-          user.passwordHash
+          user.password
         );
+        
         if (!valid) return null;
 
         await prisma.user.update({
