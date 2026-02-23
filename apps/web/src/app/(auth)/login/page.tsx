@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "@/components/layout/ThemeProvider";
 
-export default function LoginPage() {
+// 1. Create a separate component for the form logic that uses searchParams
+function LoginForm() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -113,5 +114,14 @@ export default function LoginPage() {
       </div>
       <style>{`@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
+  );
+}
+
+// 2. Wrap the component in Suspense for the final export
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
