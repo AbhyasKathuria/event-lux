@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/layout/ThemeProvider";
 
-export default function RegisterPage() {
+// 1. We move your logic into a separate internal component
+function RegisterForm() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "USER" });
@@ -137,5 +138,14 @@ export default function RegisterPage() {
       </div>
       <style>{`@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
+  );
+}
+
+// 2. Wrap the component in Suspense for the final export
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading Registration...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
