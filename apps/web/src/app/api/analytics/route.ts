@@ -11,15 +11,24 @@ export async function GET(req: NextRequest) {
     const userId = (session.user as any).id;
 
     const isAdmin = ["ADMIN", "SUPERADMIN"].includes(role);
-    const eventFilter = isAdmin && role !== "SUPERADMIN" ? { organizerId: userId } : {};
+    
+    // Cast to any to prevent strict type mismatch during Vercel build
+    const eventFilter: any = isAdmin && role !== "SUPERADMIN" ? { organizerId: userId } : {};
 
     const [totalEvents, totalRegistrations, totalUsers, checkedInCount, recentRegistrations, eventsByCategory] = await Promise.all([
       prisma.event.count({ where: eventFilter }),
-      prisma.registration.count({ where: isAdmin ? { event: eventFilter } : {} }),
+      prisma.registration.count({ 
+        where: isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {} 
+      }),
       role === "SUPERADMIN" ? prisma.user.count() : Promise.resolve(0),
-      prisma.registration.count({ where: { checkedIn: true, ...(isAdmin ? { event: eventFilter } : {}) } }),
+      prisma.registration.count({ 
+        where: { 
+          checkedIn: true, 
+          ...(isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {}) 
+        } 
+      }),
       prisma.registration.findMany({
-        take: 7,
+        take: 50, // Increased to get a better spread for the chart
         orderBy: { createdAt: "desc" },
         where: isAdmin && role !== "SUPERADMIN" ? { event: { organizerId: userId } } : {},
         select: { createdAt: true },
@@ -39,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     const regsByDay = last7Days.map((day) => ({
       day: new Date(day).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
-      count: recentRegistrations.filter((r: { createdAt: Date }) => r.createdAt.toISOString().split("T")[0] === day).length,
+      count: recentRegistrations.filter((r: any) => r.createdAt.toISOString().split("T")[0] === day).length,
     }));
 
     return NextResponse.json({
@@ -49,7 +58,10 @@ export async function GET(req: NextRequest) {
       checkedInCount,
       checkInRate: totalRegistrations > 0 ? Math.round((checkedInCount / totalRegistrations) * 100) : 0,
       regsByDay,
-      eventsByCategory: eventsByCategory.map((e: { category: string; _count: { id: number } }) => ({ category: e.category, count: e._count.id })),
+      eventsByCategory: eventsByCategory.map((e: any) => ({ 
+        category: e.category, 
+        count: e._count.id 
+      })),
     });
   } catch (error) {
     console.error("Analytics error:", error);
