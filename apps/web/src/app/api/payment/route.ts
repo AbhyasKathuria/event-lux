@@ -21,8 +21,11 @@ export async function POST(req: NextRequest) {
         key_secret: process.env.RAZORPAY_KEY_SECRET!,
       });
 
+      // FIX: Convert Decimal to Number before multiplication
+      const amountInPaise = Math.round(Number(event.price || 0) * 100);
+
       const order = await razorpay.orders.create({
-        amount: Math.round((event.price || 0) * 100), // paise
+        amount: amountInPaise,
         currency: "INR",
         receipt: `receipt_${eventId}_${Date.now()}`,
         notes: { eventId, userId: (session.user as any).id },
@@ -32,7 +35,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "verify-payment") {
-      // Verify Razorpay signature
       const body = razorpayOrderId + "|" + razorpayPaymentId;
       const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!).update(body).digest("hex");
 
@@ -40,7 +42,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid payment signature" }, { status: 400 });
       }
 
-      // Mark payment as complete and create registration
       const QRCode = await import("qrcode");
       const ticketCode = `EVL-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
       const qrData = JSON.stringify({ ticketCode, eventId, userId: (session.user as any).id });
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
           status: "CONFIRMED",
           paymentStatus: "COMPLETED",
           paymentId: razorpayPaymentId,
-        },
+        } as any, // Cast to any to bypass any schema relation mismatches
       });
 
       return NextResponse.json({ success: true, registration, ticketCode, qrCodeUrl });
