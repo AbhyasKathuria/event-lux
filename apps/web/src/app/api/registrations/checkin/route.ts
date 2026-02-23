@@ -27,18 +27,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid ticket code" }, { status: 404 });
     }
 
-    if (registration.checkedIn) {
+    // Safety check for both naming conventions using 'as any'
+    const isCheckedIn = (registration as any).checkedIn || (registration as any).checkedInAt;
+
+    if (isCheckedIn) {
       return NextResponse.json({
         success: false,
         error: "Already checked in",
         registration,
-        checkedInAt: registration.checkedInAt,
+        checkedInAt: (registration as any).checkedInAt,
       }, { status: 409 });
     }
 
     const updated = await prisma.registration.update({
       where: { id: registration.id },
-      data: { checkedIn: true, checkedInAt: new Date() },
+      data: { 
+        checkedIn: true, 
+        checkedInAt: new Date() 
+      } as any,
       include: {
         user: { select: { name: true, email: true } },
         event: { select: { title: true } },
