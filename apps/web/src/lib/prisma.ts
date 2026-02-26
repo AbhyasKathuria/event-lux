@@ -2,17 +2,23 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neon } from "@neondatabase/serverless";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL!;
-  const sql = neon(connectionString);
-  const adapter = new PrismaNeon(sql as any);
-  return new PrismaClient({ adapter } as any);
+declare global {
+  var prismaClient: PrismaClient | undefined;
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+function getPrismaClient(): PrismaClient {
+  if (!global.prismaClient) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is not defined");
+    const sql = neon(url);
+    const adapter = new PrismaNeon(sql as any);
+    global.prismaClient = new PrismaClient({ adapter } as any);
+  }
+  return global.prismaClient;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return (getPrismaClient() as any)[prop];
+  },
+});
