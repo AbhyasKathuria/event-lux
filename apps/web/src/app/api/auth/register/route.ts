@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
     const existing = await pool.query('SELECT id FROM "User" WHERE email = $1 LIMIT 1', [email]);
     if (existing.rows.length > 0) {
