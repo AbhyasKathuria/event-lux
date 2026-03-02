@@ -20,6 +20,8 @@ model User {
   sessions      Session[]
   registrations Registration[]
   events        Event[]        @relation("OrganizerEvents")
+
+  @@map("users")
 }
 
 model Account {
@@ -38,6 +40,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Session {
@@ -46,6 +49,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 model VerificationToken {
@@ -54,6 +59,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model University {
@@ -62,6 +68,8 @@ model University {
   domain   String
   location String
   events   Event[]
+
+  @@map("universities")
 }
 
 model Event {
@@ -84,6 +92,8 @@ model Event {
   organizer     User           @relation("OrganizerEvents", fields: [organizerId], references: [id])
   registrations Registration[]
   syncs         GoogleSheetSync[]
+
+  @@map("events")
 }
 
 model Registration {
@@ -101,6 +111,8 @@ model Registration {
   updatedAt     DateTime  @updatedAt
   user          User      @relation(fields: [userId], references: [id])
   event         Event     @relation(fields: [eventId], references: [id])
+
+  @@map("registrations")
 }
 
 model GoogleSheetSync {
@@ -113,4 +125,5 @@ model GoogleSheetSync {
   event          Event    @relation(fields: [eventId], references: [id])
 
   @@unique([eventId, spreadsheetId])
+  @@map("google_sheet_syncs")
 }
