@@ -24,8 +24,7 @@ export async function POST(req: NextRequest) {
     const id = crypto.randomUUID();
 
     await pool.query(
-      `INSERT INTO users (id, email, name, "passwordHash", role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, 'USER', NOW(), NOW())`,
-      [id, email, name, hashedPassword]
+      `INSERT INTO users (id, email, name, password, role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, 'USER', NOW(), NOW())`,      [id, email, name, hashedPassword]
     );
 
     await pool.end();
