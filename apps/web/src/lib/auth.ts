@@ -3,7 +3,10 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import { Pool } from "pg";
 import bcrypt from "bcryptjs";
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -25,25 +28,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const result = await pool.query(
+          'SELECT * FROM users WHERE email = $1 LIMIT 1',
+          [credentials.email]
+        );
+        await pool.end();
 
-        // FIXED: Changed passwordHash to password to match updated schema
+        const user = result.rows[0];
         if (!user || !user.password) return null;
 
-        // FIXED: Changed user.passwordHash to user.password
         const valid = await bcrypt.compare(
           credentials.password as string,
           user.password
         );
-        
         if (!valid) return null;
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
 
         return {
           id: user.id,
