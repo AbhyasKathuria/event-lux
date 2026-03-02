@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 export async function POST(req: NextRequest) {
   try {
     const { email, password, name } = await req.json();
@@ -10,11 +12,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-    const existing = await pool.query('SELECT id FROM "User" WHERE email = $1 LIMIT 1', [email]);
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
     if (existing.rows.length > 0) {
+      await pool.end();
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
@@ -22,7 +24,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const id = crypto.randomUUID();
 
     await pool.query(
-      `INSERT INTO "User" (id, email, name, password, role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, 'USER', NOW(), NOW())`,
+      `INSERT INTO users (id, email, name, "passwordHash", role, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, 'USER', NOW(), NOW())`,
       [id, email, name, hashedPassword]
     );
 
